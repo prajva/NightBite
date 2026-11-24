@@ -124,7 +124,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setRejectionError(
               `Access Restricted: Only official university student accounts (@${allowedDomain}) or authorized mess admins are permitted. Your account (${emailLower}) was rejected.`
             );
-            fbSignOut(auth).catch(() => {});
+            if (auth) {
+              fbSignOut(auth).catch(() => {});
+            }
             return;
           }
 
@@ -252,7 +254,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setRejectionError(
           `Access Restricted: Google account ${email} is not from @${allowedDomain}. Only university emails are permitted.`
         );
-        await fbSignOut(auth);
+        if (auth) {
+          await fbSignOut(auth);
+        }
       }
     } catch (err: unknown) {
       console.error('Google Sign In Error:', err);
