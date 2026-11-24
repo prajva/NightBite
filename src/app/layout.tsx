@@ -8,6 +8,7 @@ import { StockConflictModal } from '@/components/StockConflictModal';
 import { StockFreedToast } from '@/components/StockFreedToast';
 import { UpiPaymentSheet } from '@/components/UpiPaymentSheet';
 import { PwaInstallPrompt } from '@/components/PwaInstallPrompt';
+import { AdminLoginModal } from '@/components/AdminLoginModal';
 
 export const metadata: Metadata = {
   title: 'NightBite • University Hostel Night Mess (10:30 PM - 12:00 AM IST)',
@@ -57,6 +58,7 @@ export default function RootLayout({
             <StockConflictModal />
             <StockFreedToast />
             <UpiPaymentSheet />
+            <AdminLoginModal />
             <PwaInstallPrompt />
           </NightBiteProvider>
         </AuthProvider>

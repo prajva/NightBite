@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 
 export function Navbar() {
-  const { user, role, switchDemoUser, allowedDomain } = useAuth();
+  const { user, role, switchDemoUser, allowedDomain, setIsAdminLoginModalOpen } = useAuth();
   const { messStatus, toggleMessHoursOverride } = useNightBite();
   const [roleMenuOpen, setRoleMenuOpen] = useState(false);
   const [hoursModalOpen, setHoursModalOpen] = useState(false);
@@ -166,6 +166,22 @@ export function Navbar() {
                     </div>
                     {role === 'ADMIN' && <Check className="w-4 h-4 text-amber-electric" />}
                   </button>
+
+                  {/* Admin Password Login Modal Trigger */}
+                  <div className="border-t border-night-border/80 my-1 pt-1">
+                    <button
+                      onClick={() => setIsAdminLoginModalOpen(true)}
+                      className="w-full text-left p-2 rounded-lg text-xs text-amber-electric hover:bg-amber-electric/10 transition-colors flex items-center justify-between"
+                    >
+                      <div className="flex items-center gap-1.5 font-semibold">
+                        <Shield className="w-3.5 h-3.5" />
+                        <span>Admin Login (Password / PIN)</span>
+                      </div>
+                      <span className="text-[10px] bg-amber-electric/20 text-amber-electric px-1.5 py-0.5 rounded font-mono">
+                        Secure
+                      </span>
+                    </button>
+                  </div>
 
                   {/* Test Gmail Rejection */}
                   <div className="border-t border-night-border/80 my-1 pt-1">
