@@ -1,0 +1,50 @@
+{
+  "name": "NightBite • University Night Mess",
+  "short_name": "NightBite",
+  "description": "Late-night university hostel mess ordering (10:30 PM - 12:00 AM IST). Real-time stock, instant UPI payments & token tracker.",
+  "start_url": "/",
+  "id": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#09090B",
+  "theme_color": "#09090B",
+  "scope": "/",
+  "lang": "en-IN",
+  "categories": ["food", "lifestyle", "utilities"],
+  "icons": [
+    {
+      "src": "/icons/icon-192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Live Night Menu",
+      "short_name": "Menu",
+      "description": "View live stock and order rolls & maggi",
+      "url": "/?tab=menu",
+      "icons": [{ "src": "/icons/icon-192.svg", "sizes": "192x192" }]
+    },
+    {
+      "name": "Admin Counter",
+      "short_name": "Admin",
+      "description": "Admin kitchen & token handover counter",
+      "url": "/admin",
+      "icons": [{ "src": "/icons/icon-192.svg", "sizes": "192x192" }]
+    }
+  ]
+}
