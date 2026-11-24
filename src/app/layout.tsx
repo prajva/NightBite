@@ -3,16 +3,14 @@ import './globals.css';
 import { AuthProvider } from '@/context/AuthContext';
 import { NightBiteProvider } from '@/context/NightBiteContext';
 import { Navbar } from '@/components/Navbar';
-import { RejectionBanner } from '@/components/RejectionBanner';
 import { StockConflictModal } from '@/components/StockConflictModal';
 import { StockFreedToast } from '@/components/StockFreedToast';
 import { UpiPaymentSheet } from '@/components/UpiPaymentSheet';
 import { PwaInstallPrompt } from '@/components/PwaInstallPrompt';
-import { AdminLoginModal } from '@/components/AdminLoginModal';
 
 export const metadata: Metadata = {
-  title: 'NightBite • University Hostel Night Mess (10:30 PM - 12:00 AM IST)',
-  description: 'Mobile-first PWA for late-night university hostel mess orders. Real-time stock counters, atomic race-condition prevention, instant UPI payments, and digital token tracking.',
+  title: 'NightBite • VIT-AP University Hostel Night Mess (10:30 PM - 12:00 AM IST)',
+  description: 'Uber-style mobile-first PWA for VIT-AP hostel night mess. Real-time stock counters, atomic race-condition prevention, instant UPI payments, and digital token tracking.',
   manifest: '/manifest.json',
   icons: {
     icon: '/icons/icon-192.svg',
@@ -26,7 +24,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#09090B',
+  themeColor: '#000000',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
@@ -43,13 +41,12 @@ export default function RootLayout({
       <head>
         <link rel="apple-touch-icon" href="/icons/icon-192.svg" />
       </head>
-      <body className="bg-night-black text-zinc-100 min-h-screen selection:bg-amber-electric selection:text-black">
+      <body className="bg-black text-white min-h-screen selection:bg-peach selection:text-black">
         <AuthProvider>
           <NightBiteProvider>
             <div className="flex flex-col min-h-screen">
               <Navbar />
-              <main className="flex-1 max-w-4xl w-full mx-auto pt-3">
-                <RejectionBanner />
+              <main className="flex-1 max-w-4xl w-full mx-auto">
                 {children}
               </main>
             </div>
@@ -58,7 +55,6 @@ export default function RootLayout({
             <StockConflictModal />
             <StockFreedToast />
             <UpiPaymentSheet />
-            <AdminLoginModal />
             <PwaInstallPrompt />
           </NightBiteProvider>
         </AuthProvider>

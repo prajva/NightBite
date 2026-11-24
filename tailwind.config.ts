@@ -10,45 +10,43 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        night: {
-          DEFAULT: "#09090B",
-          black: "#09090B",
-          card: "#18181B",
-          elevated: "#202024",
-          border: "#27272A",
-          muted: "#71717A",
-          subtle: "#A1A1AA",
+        uber: {
+          black: "#000000",
+          surface: "#0F0F10",
+          card: "#161618",
+          cardHover: "#1E1E22",
+          border: "#242428",
+          subtle: "#8E8E93",
+          muted: "#636366",
         },
-        amber: {
-          electric: "#F59E0B",
-          glow: "#D97706",
+        peach: {
+          DEFAULT: "#FF8F6B",
+          50: "#FFF4EF",
+          100: "#FFE6DC",
+          200: "#FFC8B3",
+          300: "#FFAA8A",
+          400: "#FF8F6B",
+          500: "#F97346",
+          600: "#DE5424",
+          700: "#B83A11",
+          glow: "rgba(255, 143, 107, 0.15)",
+          border: "rgba(255, 143, 107, 0.35)",
         },
-        emerald: {
-          stock: "#10B981",
-          glow: "#059669",
-        },
-        crimson: {
-          danger: "#EF4444",
-          dim: "#7F1D1D",
+        stock: {
+          green: "#10B981",
+          red: "#EF4444",
         },
       },
       fontFamily: {
-        sans: ["Inter", "Geist", "system-ui", "-apple-system", "sans-serif"],
-      },
-      animation: {
-        "pulse-fast": "pulse 1.2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
-        "fade-in": "fadeIn 0.25s ease-out forwards",
-        "slide-up": "slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards",
-      },
-      keyframes: {
-        fadeIn: {
-          "0%": { opacity: "0" },
-          "100%": { opacity: "1" },
-        },
-        slideUp: {
-          "0%": { transform: "translateY(12px)", opacity: "0" },
-          "100%": { transform: "translateY(0)", opacity: "1" },
-        },
+        sans: [
+          "-apple-system",
+          "BlinkMacSystemFont",
+          "SF Pro Display",
+          "Inter",
+          "Segoe UI",
+          "system-ui",
+          "sans-serif",
+        ],
       },
     },
   },

@@ -1,13 +1,13 @@
 {
-  "name": "NightBite • University Night Mess",
+  "name": "NightBite • VIT-AP Hostel Night Mess",
   "short_name": "NightBite",
-  "description": "Late-night university hostel mess ordering (10:30 PM - 12:00 AM IST). Real-time stock, instant UPI payments & token tracker.",
+  "description": "Late-night university hostel mess ordering (10:30 PM - 12:00 AM IST). Real-time stock, instant UPI payments & digital token tracker.",
   "start_url": "/",
   "id": "/",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#09090B",
-  "theme_color": "#09090B",
+  "background_color": "#000000",
+  "theme_color": "#000000",
   "scope": "/",
   "lang": "en-IN",
   "categories": ["food", "lifestyle", "utilities"],
@@ -33,15 +33,15 @@
   ],
   "shortcuts": [
     {
-      "name": "Live Night Menu",
+      "name": "Hostel Menu",
       "short_name": "Menu",
       "description": "View live stock and order rolls & maggi",
-      "url": "/?tab=menu",
+      "url": "/",
       "icons": [{ "src": "/icons/icon-192.svg", "sizes": "192x192" }]
     },
     {
-      "name": "Admin Counter",
-      "short_name": "Admin",
+      "name": "Staff Counter",
+      "short_name": "Staff",
       "description": "Admin kitchen & token handover counter",
       "url": "/admin",
       "icons": [{ "src": "/icons/icon-192.svg", "sizes": "192x192" }]

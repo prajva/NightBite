@@ -50,6 +50,7 @@ export interface Order {
   studentId: string;
   studentEmail: string;
   studentName: string;
+  hostelRoom?: string;
   items: OrderItem[];
   totalAmount: number;
   roommateTag?: string; // e.g. "Room 304 - 2 spicy"
@@ -86,6 +87,10 @@ export interface UserProfile {
   id: string;
   email: string;
   name: string;
+  firstName?: string;
+  middleName?: string;
+  surname?: string;
+  hostelRoom?: string;
   role: Role;
   isDemo?: boolean;
 }

@@ -54,21 +54,21 @@ export function PwaInstallPrompt() {
 
   return (
     <div className="fixed bottom-24 left-4 right-4 z-40 max-w-sm mx-auto animate-slide-up">
-      <div className="p-3 bg-night-card border border-amber-electric/40 rounded-2xl shadow-2xl flex items-center justify-between gap-3 text-white backdrop-blur-md">
+      <div className="p-3 bg-uber-surface border border-peach-border rounded-2xl shadow-2xl flex items-center justify-between gap-3 text-white backdrop-blur-md">
         <div className="flex items-center gap-2.5">
-          <div className="p-2 bg-amber-electric/15 text-amber-electric rounded-xl">
+          <div className="p-2 bg-peach-glow text-peach border border-peach-border rounded-xl">
             <Download className="w-4 h-4" />
           </div>
           <div>
             <div className="text-xs font-bold text-white">Install NightBite App</div>
-            <div className="text-[10px] text-zinc-400">Add to Home Screen for fast late-night orders</div>
+            <div className="text-[10px] text-zinc-400">Add to Home Screen for fast hostel ordering</div>
           </div>
         </div>
 
         <div className="flex items-center gap-1.5">
           <button
             onClick={handleInstallClick}
-            className="px-3 py-1.5 rounded-xl bg-amber-electric text-black font-bold text-xs uppercase"
+            className="px-3 py-1.5 rounded-xl bg-peach text-black font-bold text-xs uppercase"
           >
             Install
           </button>

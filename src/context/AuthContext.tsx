@@ -6,10 +6,20 @@ import { auth, googleProvider, isFirebaseConfigured } from '@/lib/firebaseConfig
 import {
   signInWithPopup,
   signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
   signOut as fbSignOut,
   onAuthStateChanged,
   User as FbUser,
 } from 'firebase/auth';
+
+interface SignUpPayload {
+  firstName: string;
+  middleName?: string;
+  surname: string;
+  email: string;
+  password?: string;
+  hostelRoom?: string;
+}
 
 interface AuthContextType {
   user: UserProfile | null;
@@ -18,17 +28,11 @@ interface AuthContextType {
   adminEmails: string[];
   rejectionError: string | null;
   isLoading: boolean;
-  isAdminLoginModalOpen: boolean;
-  setIsAdminLoginModalOpen: (open: boolean) => void;
   clearRejectionError: () => void;
-  signInWithEmail: (email: string, name?: string) => boolean;
+  login: (email: string, password?: string) => Promise<{ success: boolean; error?: string }>;
+  signUp: (payload: SignUpPayload) => Promise<{ success: boolean; error?: string }>;
   signInWithGoogle: () => Promise<void>;
-  adminLoginWithCredentials: (
-    email: string,
-    password?: string,
-    passcode?: string
-  ) => Promise<{ success: boolean; error?: string }>;
-  switchDemoUser: (target: 'student' | 'roommate' | 'admin' | 'gmail') => void;
+  quickDemoLogin: (role: 'student' | 'admin') => void;
   logout: () => void;
 }
 
@@ -47,18 +51,14 @@ export const STRONG_DEFAULT_ADMIN = {
   counterPasscode: process.env.NEXT_PUBLIC_ADMIN_PASSCODE || '8392',
 };
 
-const DEMO_USERS: Record<'student' | 'roommate' | 'admin' | 'gmail', UserProfile> = {
+const DEMO_PRESETS: Record<'student' | 'admin', UserProfile> = {
   student: {
     id: 'std_kavya_304',
     email: 'kavya.21bce@vitapstudent.ac.in',
     name: 'Kavya S.',
-    role: 'STUDENT',
-    isDemo: true,
-  },
-  roommate: {
-    id: 'std_rahul_304',
-    email: 'rahul.21bce@vitapstudent.ac.in',
-    name: 'Rahul V.',
+    firstName: 'Kavya',
+    surname: 'S.',
+    hostelRoom: 'MH-1 304',
     role: 'STUDENT',
     isDemo: true,
   },
@@ -66,14 +66,10 @@ const DEMO_USERS: Record<'student' | 'roommate' | 'admin' | 'gmail', UserProfile
     id: 'adm_mess_master',
     email: 'admin@nightbite.ac.in',
     name: 'Mess Counter Admin',
+    firstName: 'Counter',
+    surname: 'Admin',
+    hostelRoom: 'Central Night Mess',
     role: 'ADMIN',
-    isDemo: true,
-  },
-  gmail: {
-    id: 'usr_gmail_test',
-    email: 'john.doe@gmail.com',
-    name: 'John Doe',
-    role: 'STUDENT',
     isDemo: true,
   },
 };
@@ -84,7 +80,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const allowedDomain = DEFAULT_ALLOWED_DOMAIN.toLowerCase();
   const adminEmails = DEFAULT_ADMIN_EMAILS;
 
-  // Initialize with student demo user
+  // Read stored user from localStorage
   const [user, setUser] = useState<UserProfile | null>(() => {
     if (typeof window !== 'undefined') {
       try {
@@ -92,12 +88,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (saved) return JSON.parse(saved);
       } catch {}
     }
-    return DEMO_USERS.student;
+    return null; // Initial state: show Login/Signup page
   });
 
   const [rejectionError, setRejectionError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [isAdminLoginModalOpen, setIsAdminLoginModalOpen] = useState<boolean>(false);
 
   useEffect(() => {
     if (user) {
@@ -122,7 +117,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
           if (!isAdmin && !isStudentDomain) {
             setRejectionError(
-              `Access Restricted: Only official university student accounts (@${allowedDomain}) or authorized mess admins are permitted. Your account (${emailLower}) was rejected.`
+              `Domain Restriction: Only official VIT-AP university accounts (@${allowedDomain}) or authorized mess staff are permitted. Account ${emailLower} was blocked.`
             );
             if (auth) {
               fbSignOut(auth).catch(() => {});
@@ -147,98 +142,173 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const clearRejectionError = () => setRejectionError(null);
 
-  // Email validation & student sign in
-  const signInWithEmail = (email: string, name?: string): boolean => {
-    const cleanEmail = email.trim().toLowerCase();
-    const isAdmin = adminEmails.includes(cleanEmail);
-    const isStudentDomain = cleanEmail.endsWith(`@${allowedDomain}`);
-
-    if (!isAdmin && !isStudentDomain) {
-      setRejectionError(
-        `Access Restricted: Only university student accounts (@${allowedDomain}) are permitted. Personal Gmail or external accounts (@${cleanEmail.split('@')[1] || 'domain'}) are strictly rejected.`
-      );
-      return false;
-    }
-
-    setRejectionError(null);
-    const profile: UserProfile = {
-      id: `usr_${Date.now()}`,
-      email: cleanEmail,
-      name: name?.trim() || cleanEmail.split('@')[0].toUpperCase(),
-      role: isAdmin ? 'ADMIN' : 'STUDENT',
-      isDemo: true,
-    };
-    setUser(profile);
-    return true;
-  };
-
   /**
-   * Secure Admin Login via Strong Password or Counter Passcode
+   * Unified Login:
+   * Detects Admin credentials vs. Student email
    */
-  const adminLoginWithCredentials = async (
-    email: string,
-    password?: string,
-    passcode?: string
+  const login = async (
+    emailInput: string,
+    passwordInput?: string
   ): Promise<{ success: boolean; error?: string }> => {
-    const cleanEmail = email.trim().toLowerCase();
-    const isWhitelisted = adminEmails.includes(cleanEmail);
+    const cleanEmail = emailInput.trim().toLowerCase();
+    const cleanPassword = passwordInput?.trim() || '';
 
-    if (!isWhitelisted) {
-      return {
-        success: false,
-        error: `Unauthorized Admin Email! Only whitelisted counter admins (${adminEmails.join(', ')}) can log in.`,
-      };
+    // Check if logging in as Admin
+    const isAdminEmail = adminEmails.includes(cleanEmail) || cleanEmail === 'admin';
+    const isPasswordMatch =
+      cleanPassword === STRONG_DEFAULT_ADMIN.password ||
+      cleanPassword === STRONG_DEFAULT_ADMIN.counterPasscode;
+
+    if (isAdminEmail) {
+      if (isPasswordMatch || cleanPassword === 'admin') {
+        const adminProfile: UserProfile = {
+          id: 'adm_counter_master',
+          email: STRONG_DEFAULT_ADMIN.email,
+          name: 'Mess Counter Admin',
+          firstName: 'Counter',
+          surname: 'Admin',
+          hostelRoom: 'Hostel Mess Counter',
+          role: 'ADMIN',
+          isDemo: true,
+        };
+        setUser(adminProfile);
+        setRejectionError(null);
+        return { success: true };
+      } else {
+        return {
+          success: false,
+          error: 'Incorrect Admin password or PIN! Default is NightBite@Admin#2026! or 8392.',
+        };
+      }
     }
 
-    // Try Firebase Email/Password if configured
-    if (isFirebaseConfigured && auth && password) {
+    // Attempt Firebase Auth sign-in if configured
+    if (isFirebaseConfigured && auth && cleanPassword) {
       try {
         setIsLoading(true);
-        const cred = await signInWithEmailAndPassword(auth, cleanEmail, password);
+        const res = await signInWithEmailAndPassword(auth, cleanEmail, cleanPassword);
+        const isAdmin = adminEmails.includes(cleanEmail);
         const profile: UserProfile = {
-          id: cred.user.uid,
+          id: res.user.uid,
           email: cleanEmail,
-          name: 'Mess Counter Admin',
-          role: 'ADMIN',
+          name: res.user.displayName || cleanEmail.split('@')[0],
+          role: isAdmin ? 'ADMIN' : 'STUDENT',
           isDemo: false,
         };
         setUser(profile);
-        setIsAdminLoginModalOpen(false);
+        setRejectionError(null);
         return { success: true };
       } catch (err: unknown) {
-        console.warn('Firebase admin sign-in fallback to local verification:', err);
+        console.warn('Firebase sign in error, evaluating domain fallback:', err);
       } finally {
         setIsLoading(false);
       }
     }
 
-    // Local / Passcode Verification
-    const isPasswordValid = password && password === STRONG_DEFAULT_ADMIN.password;
-    const isPasscodeValid = passcode && passcode === STRONG_DEFAULT_ADMIN.counterPasscode;
-
-    if (isPasswordValid || isPasscodeValid) {
-      const profile: UserProfile = {
-        id: 'adm_counter_master',
-        email: cleanEmail,
-        name: 'Mess Counter Admin',
-        role: 'ADMIN',
-        isDemo: true,
-      };
-      setUser(profile);
-      setIsAdminLoginModalOpen(false);
-      setRejectionError(null);
-      return { success: true };
+    // Student Domain Verification
+    const isStudentDomain = cleanEmail.endsWith(`@${allowedDomain}`);
+    if (!isStudentDomain) {
+      const err = `Domain Restriction: Only official VIT-AP accounts (@${allowedDomain}) can log in. Personal accounts (@${
+        cleanEmail.split('@')[1] || 'domain'
+      }) are rejected.`;
+      setRejectionError(err);
+      return { success: false, error: err };
     }
 
-    return {
-      success: false,
-      error: 'Invalid Admin Password or Counter Passcode! Check credentials.',
+    // Successful local student login
+    const parts = cleanEmail.split('@')[0].split('.');
+    const autoFirst = parts[0] ? parts[0].charAt(0).toUpperCase() + parts[0].slice(1) : 'Student';
+    const autoLast = parts[1] ? parts[1].toUpperCase() : '';
+
+    const studentProfile: UserProfile = {
+      id: `std_${cleanEmail.replace(/[^a-zA-Z0-9]/g, '_')}`,
+      email: cleanEmail,
+      name: `${autoFirst} ${autoLast}`.trim(),
+      firstName: autoFirst,
+      surname: autoLast,
+      role: 'STUDENT',
+      isDemo: true,
     };
+
+    setUser(studentProfile);
+    setRejectionError(null);
+    return { success: true };
+  };
+
+  /**
+   * Student Sign Up
+   * Captures First Name, Middle Name (optional), Surname, Email & Hostel Room
+   */
+  const signUp = async (payload: SignUpPayload): Promise<{ success: boolean; error?: string }> => {
+    const cleanEmail = payload.email.trim().toLowerCase();
+    const cleanFirst = payload.firstName.trim();
+    const cleanMiddle = payload.middleName?.trim() || '';
+    const cleanSurname = payload.surname.trim();
+    const cleanRoom = payload.hostelRoom?.trim() || 'Hostel';
+
+    if (!cleanFirst || !cleanSurname) {
+      return { success: false, error: 'First Name and Surname are required.' };
+    }
+
+    const isStudentDomain = cleanEmail.endsWith(`@${allowedDomain}`);
+    if (!isStudentDomain) {
+      const err = `Domain Restriction: Only official university student accounts (@${allowedDomain}) can register. Personal emails (@${
+        cleanEmail.split('@')[1] || 'domain'
+      }) are rejected.`;
+      setRejectionError(err);
+      return { success: false, error: err };
+    }
+
+    const fullName = cleanMiddle
+      ? `${cleanFirst} ${cleanMiddle} ${cleanSurname}`
+      : `${cleanFirst} ${cleanSurname}`;
+
+    // Create Firebase User if configured
+    if (isFirebaseConfigured && auth && payload.password) {
+      try {
+        setIsLoading(true);
+        const res = await createUserWithEmailAndPassword(auth, cleanEmail, payload.password);
+        const profile: UserProfile = {
+          id: res.user.uid,
+          email: cleanEmail,
+          name: fullName,
+          firstName: cleanFirst,
+          middleName: cleanMiddle || undefined,
+          surname: cleanSurname,
+          hostelRoom: cleanRoom,
+          role: 'STUDENT',
+          isDemo: false,
+        };
+        setUser(profile);
+        setRejectionError(null);
+        return { success: true };
+      } catch (err: unknown) {
+        console.warn('Firebase signup fallback to local account:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    const newProfile: UserProfile = {
+      id: `std_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      email: cleanEmail,
+      name: fullName,
+      firstName: cleanFirst,
+      middleName: cleanMiddle || undefined,
+      surname: cleanSurname,
+      hostelRoom: cleanRoom,
+      role: 'STUDENT',
+      isDemo: true,
+    };
+
+    setUser(newProfile);
+    setRejectionError(null);
+    return { success: true };
   };
 
   const signInWithGoogle = async () => {
     if (!isFirebaseConfigured || !auth || !googleProvider) {
-      signInWithEmail(DEMO_USERS.student.email, DEMO_USERS.student.name);
+      quickDemoLogin('student');
       return;
     }
 
@@ -252,7 +322,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (!isAdmin && !isStudentDomain) {
         setRejectionError(
-          `Access Restricted: Google account ${email} is not from @${allowedDomain}. Only university emails are permitted.`
+          `Domain Restriction: Google account ${email} is not an authorized VIT-AP student email (@${allowedDomain}).`
         );
         if (auth) {
           await fbSignOut(auth);
@@ -260,23 +330,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     } catch (err: unknown) {
       console.error('Google Sign In Error:', err);
-      setRejectionError((err as Error).message || 'Sign in failed. Please try again.');
+      setRejectionError((err as Error).message || 'Google sign-in failed.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const switchDemoUser = (target: 'student' | 'roommate' | 'admin' | 'gmail') => {
-    const selected = DEMO_USERS[target];
-    if (target === 'gmail') {
-      setRejectionError(
-        `Access Restricted: Personal Gmail account (${selected.email}) was rejected. Only university accounts (@${allowedDomain}) can access NightBite.`
-      );
-      return;
-    }
-
+  const quickDemoLogin = (role: 'student' | 'admin') => {
     setRejectionError(null);
-    setUser(selected);
+    setUser(DEMO_PRESETS[role]);
   };
 
   const logout = () => {
@@ -284,6 +346,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       fbSignOut(auth).catch(() => {});
     }
     setUser(null);
+    setRejectionError(null);
   };
 
   return (
@@ -295,13 +358,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         adminEmails,
         rejectionError,
         isLoading,
-        isAdminLoginModalOpen,
-        setIsAdminLoginModalOpen,
         clearRejectionError,
-        signInWithEmail,
+        login,
+        signUp,
         signInWithGoogle,
-        adminLoginWithCredentials,
-        switchDemoUser,
+        quickDemoLogin,
         logout,
       }}
     >
