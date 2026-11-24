@@ -50,14 +50,14 @@ export interface Order {
   studentId: string;
   studentEmail: string;
   studentName: string;
-  hostelRoom?: string;
+  roomNumber?: string; // e.g. "Room 304"
   items: OrderItem[];
   totalAmount: number;
-  roommateTag?: string; // e.g. "Room 304 - 2 spicy"
+  roommateTag?: string;
   status: OrderStatus;
   declineReason?: string;
   utrNumber?: string;
-  paymentDeadline?: number; // timestamp in ms
+  paymentDeadline?: number;
   createdAt: number;
   updatedAt: number;
   approvedAt?: number;
@@ -90,7 +90,7 @@ export interface UserProfile {
   firstName?: string;
   middleName?: string;
   surname?: string;
-  hostelRoom?: string;
+  roomNumber?: string; // e.g. "Room 304" (Hostel block is strictly MH-4)
   role: Role;
   isDemo?: boolean;
 }

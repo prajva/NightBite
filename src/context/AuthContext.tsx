@@ -17,8 +17,8 @@ interface SignUpPayload {
   middleName?: string;
   surname: string;
   email: string;
+  roomNumber: string; // strictly for MH-4 block
   password?: string;
-  hostelRoom?: string;
 }
 
 interface AuthContextType {
@@ -53,22 +53,22 @@ export const STRONG_DEFAULT_ADMIN = {
 
 const DEMO_PRESETS: Record<'student' | 'admin', UserProfile> = {
   student: {
-    id: 'std_kavya_304',
+    id: 'std_kavya_mh4_304',
     email: 'kavya.21bce@vitapstudent.ac.in',
     name: 'Kavya S.',
     firstName: 'Kavya',
     surname: 'S.',
-    hostelRoom: 'MH-1 304',
+    roomNumber: 'Room 304',
     role: 'STUDENT',
     isDemo: true,
   },
   admin: {
-    id: 'adm_mess_master',
+    id: 'adm_mh4_counter',
     email: 'admin@nightbite.ac.in',
-    name: 'Mess Counter Admin',
-    firstName: 'Counter',
-    surname: 'Admin',
-    hostelRoom: 'Central Night Mess',
+    name: 'MH-4 Mess Counter',
+    firstName: 'MH-4',
+    surname: 'Staff',
+    roomNumber: 'MH-4 Ground Counter',
     role: 'ADMIN',
     isDemo: true,
   },
@@ -80,7 +80,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const allowedDomain = DEFAULT_ALLOWED_DOMAIN.toLowerCase();
   const adminEmails = DEFAULT_ADMIN_EMAILS;
 
-  // Read stored user from localStorage
   const [user, setUser] = useState<UserProfile | null>(() => {
     if (typeof window !== 'undefined') {
       try {
@@ -88,7 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (saved) return JSON.parse(saved);
       } catch {}
     }
-    return null; // Initial state: show Login/Signup page
+    return null;
   });
 
   const [rejectionError, setRejectionError] = useState<string | null>(null);
@@ -106,7 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [user]);
 
-  // Listen to real Firebase Auth state if enabled
+  // Sync Firebase Auth if present
   useEffect(() => {
     if (isFirebaseConfigured && auth) {
       const unsubscribe = onAuthStateChanged(auth, (fbUser: FbUser | null) => {
@@ -117,7 +116,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
           if (!isAdmin && !isStudentDomain) {
             setRejectionError(
-              `Domain Restriction: Only official VIT-AP university accounts (@${allowedDomain}) or authorized mess staff are permitted. Account ${emailLower} was blocked.`
+              `VIT-AP Student email required (@${allowedDomain}). External emails are restricted.`
             );
             if (auth) {
               fbSignOut(auth).catch(() => {});
@@ -128,7 +127,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const profile: UserProfile = {
             id: fbUser.uid,
             email: fbUser.email,
-            name: fbUser.displayName || (isAdmin ? 'Mess Counter Admin' : fbUser.email.split('@')[0]),
+            name: fbUser.displayName || (isAdmin ? 'MH-4 Counter Staff' : fbUser.email.split('@')[0]),
+            roomNumber: 'MH-4 Room',
             role: isAdmin ? 'ADMIN' : 'STUDENT',
             isDemo: false,
           };
@@ -142,10 +142,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const clearRejectionError = () => setRejectionError(null);
 
-  /**
-   * Unified Login:
-   * Detects Admin credentials vs. Student email
-   */
   const login = async (
     emailInput: string,
     passwordInput?: string
@@ -153,7 +149,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const cleanEmail = emailInput.trim().toLowerCase();
     const cleanPassword = passwordInput?.trim() || '';
 
-    // Check if logging in as Admin
+    // Check Admin
     const isAdminEmail = adminEmails.includes(cleanEmail) || cleanEmail === 'admin';
     const isPasswordMatch =
       cleanPassword === STRONG_DEFAULT_ADMIN.password ||
@@ -162,12 +158,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (isAdminEmail) {
       if (isPasswordMatch || cleanPassword === 'admin') {
         const adminProfile: UserProfile = {
-          id: 'adm_counter_master',
+          id: 'adm_mh4_master',
           email: STRONG_DEFAULT_ADMIN.email,
-          name: 'Mess Counter Admin',
-          firstName: 'Counter',
-          surname: 'Admin',
-          hostelRoom: 'Hostel Mess Counter',
+          name: 'MH-4 Mess Counter',
+          firstName: 'MH-4',
+          surname: 'Staff',
+          roomNumber: 'MH-4 Ground Floor',
           role: 'ADMIN',
           isDemo: true,
         };
@@ -177,12 +173,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else {
         return {
           success: false,
-          error: 'Incorrect Admin password or PIN! Default is NightBite@Admin#2026! or 8392.',
+          error: 'Incorrect staff credentials. Default: NightBite@Admin#2026! or PIN 8392',
         };
       }
     }
 
-    // Attempt Firebase Auth sign-in if configured
+    // Try Firebase
     if (isFirebaseConfigured && auth && cleanPassword) {
       try {
         setIsLoading(true);
@@ -192,6 +188,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           id: res.user.uid,
           email: cleanEmail,
           name: res.user.displayName || cleanEmail.split('@')[0],
+          roomNumber: 'MH-4 Room',
           role: isAdmin ? 'ADMIN' : 'STUDENT',
           isDemo: false,
         };
@@ -199,23 +196,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setRejectionError(null);
         return { success: true };
       } catch (err: unknown) {
-        console.warn('Firebase sign in error, evaluating domain fallback:', err);
+        console.warn('Firebase login fallback:', err);
       } finally {
         setIsLoading(false);
       }
     }
 
-    // Student Domain Verification
+    // Student domain validation
     const isStudentDomain = cleanEmail.endsWith(`@${allowedDomain}`);
     if (!isStudentDomain) {
-      const err = `Domain Restriction: Only official VIT-AP accounts (@${allowedDomain}) can log in. Personal accounts (@${
-        cleanEmail.split('@')[1] || 'domain'
-      }) are rejected.`;
+      const err = `Domain Restriction: Only official VIT-AP emails (@${allowedDomain}) can log in.`;
       setRejectionError(err);
       return { success: false, error: err };
     }
 
-    // Successful local student login
     const parts = cleanEmail.split('@')[0].split('.');
     const autoFirst = parts[0] ? parts[0].charAt(0).toUpperCase() + parts[0].slice(1) : 'Student';
     const autoLast = parts[1] ? parts[1].toUpperCase() : '';
@@ -226,6 +220,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       name: `${autoFirst} ${autoLast}`.trim(),
       firstName: autoFirst,
       surname: autoLast,
+      roomNumber: 'MH-4 Room',
       role: 'STUDENT',
       isDemo: true,
     };
@@ -235,26 +230,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { success: true };
   };
 
-  /**
-   * Student Sign Up
-   * Captures First Name, Middle Name (optional), Surname, Email & Hostel Room
-   */
   const signUp = async (payload: SignUpPayload): Promise<{ success: boolean; error?: string }> => {
     const cleanEmail = payload.email.trim().toLowerCase();
     const cleanFirst = payload.firstName.trim();
     const cleanMiddle = payload.middleName?.trim() || '';
     const cleanSurname = payload.surname.trim();
-    const cleanRoom = payload.hostelRoom?.trim() || 'Hostel';
+    const cleanRoom = payload.roomNumber.trim();
 
     if (!cleanFirst || !cleanSurname) {
       return { success: false, error: 'First Name and Surname are required.' };
     }
+    if (!cleanRoom) {
+      return { success: false, error: 'Room number is required (e.g., Room 304).' };
+    }
 
     const isStudentDomain = cleanEmail.endsWith(`@${allowedDomain}`);
     if (!isStudentDomain) {
-      const err = `Domain Restriction: Only official university student accounts (@${allowedDomain}) can register. Personal emails (@${
-        cleanEmail.split('@')[1] || 'domain'
-      }) are rejected.`;
+      const err = `Only university student accounts (@${allowedDomain}) can register. Personal emails are restricted.`;
       setRejectionError(err);
       return { success: false, error: err };
     }
@@ -263,7 +255,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       ? `${cleanFirst} ${cleanMiddle} ${cleanSurname}`
       : `${cleanFirst} ${cleanSurname}`;
 
-    // Create Firebase User if configured
     if (isFirebaseConfigured && auth && payload.password) {
       try {
         setIsLoading(true);
@@ -275,7 +266,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           firstName: cleanFirst,
           middleName: cleanMiddle || undefined,
           surname: cleanSurname,
-          hostelRoom: cleanRoom,
+          roomNumber: cleanRoom.toLowerCase().startsWith('room') ? cleanRoom : `Room ${cleanRoom}`,
           role: 'STUDENT',
           isDemo: false,
         };
@@ -283,7 +274,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setRejectionError(null);
         return { success: true };
       } catch (err: unknown) {
-        console.warn('Firebase signup fallback to local account:', err);
+        console.warn('Firebase signup fallback:', err);
       } finally {
         setIsLoading(false);
       }
@@ -296,7 +287,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       firstName: cleanFirst,
       middleName: cleanMiddle || undefined,
       surname: cleanSurname,
-      hostelRoom: cleanRoom,
+      roomNumber: cleanRoom.toLowerCase().startsWith('room') ? cleanRoom : `Room ${cleanRoom}`,
       role: 'STUDENT',
       isDemo: true,
     };
@@ -322,7 +313,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (!isAdmin && !isStudentDomain) {
         setRejectionError(
-          `Domain Restriction: Google account ${email} is not an authorized VIT-AP student email (@${allowedDomain}).`
+          `Domain Restriction: Google account ${email} is not from @${allowedDomain}.`
         );
         if (auth) {
           await fbSignOut(auth);

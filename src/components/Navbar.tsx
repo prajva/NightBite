@@ -10,27 +10,22 @@ import {
   User,
   LogOut,
   Sparkles,
-  ChevronDown,
-  Layers,
-  UtensilsCrossed,
-  Sliders,
-  Check,
 } from 'lucide-react';
 
 export function Navbar() {
-  const { user, role, logout, quickDemoLogin } = useAuth();
+  const { user, role, logout } = useAuth();
   const { messStatus, toggleMessHoursOverride } = useNightBite();
   const [hoursModalOpen, setHoursModalOpen] = useState(false);
 
-  if (!user) return null; // Don't show header on the login/signup screen
+  if (!user) return null;
 
   return (
     <>
       <header className="sticky top-0 z-40 bg-black/95 backdrop-blur-xl border-b border-uber-border px-4 py-3">
         <div className="max-w-4xl mx-auto flex items-center justify-between gap-3">
-          {/* Brand Logo — Minimalist Uber Peach */}
+          {/* Brand Logo — Uber Minimalist */}
           <Link href="/" className="flex items-center gap-2 group">
-            <div className="w-8 h-8 rounded-xl bg-peach-glow border border-peach-border flex items-center justify-center relative overflow-hidden">
+            <div className="w-8 h-8 rounded-xl bg-peach-glow border border-peach-border flex items-center justify-center">
               <span className="font-extrabold text-sm text-peach font-mono">NB</span>
             </div>
             <div>
@@ -38,8 +33,8 @@ export function Navbar() {
                 <span className="font-bold text-base tracking-tight text-white group-hover:text-peach transition-colors">
                   Night<span className="text-peach">Bite</span>
                 </span>
-                <span className="text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded bg-peach/15 text-peach border border-peach/30">
-                  {role === 'ADMIN' ? 'Staff' : 'Hostel'}
+                <span className="text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded bg-peach/15 text-peach border border-peach/30 font-mono">
+                  MH-4
                 </span>
               </div>
             </div>
@@ -67,7 +62,7 @@ export function Navbar() {
               </span>
               <span className="tabular-nums">
                 {messStatus.isOpen
-                  ? `Closes in ${messStatus.timeRemainingFormatted}`
+                  ? `Closes ${messStatus.timeRemainingFormatted}`
                   : messStatus.timeRemainingFormatted}
               </span>
             </button>
@@ -80,12 +75,12 @@ export function Navbar() {
                 ) : (
                   <User className="w-3.5 h-3.5 text-zinc-400" />
                 )}
-                <span className="font-medium max-w-[100px] truncate hidden sm:inline">
+                <span className="font-medium max-w-[110px] truncate hidden sm:inline">
                   {user.name}
                 </span>
-                {user.hostelRoom && (
+                {user.roomNumber && (
                   <span className="text-[10px] text-peach font-mono hidden md:inline">
-                    ({user.hostelRoom})
+                    ({user.roomNumber})
                   </span>
                 )}
               </div>
@@ -111,7 +106,7 @@ export function Navbar() {
                 <Clock className="w-6 h-6" />
               </div>
               <div>
-                <h3 className="font-bold text-base text-white">VIT-AP Mess Schedule</h3>
+                <h3 className="font-bold text-base text-white">MH-4 Mess Schedule</h3>
                 <p className="text-xs text-zinc-400">Strict Late-Night Hostel Policy</p>
               </div>
             </div>
